@@ -1,4 +1,4 @@
-PhotoShare is a side project I'm currently working on for Android and iOS. PhotoShare allows employees and companies to take, store, and share pictures on a private folder structured cloud storage.  The project is mainly built with React Native and AWS.
+PhotoBase is a side project I'm currently working on for Android and iOS. PhotoBase allows employees and companies to take, store, and share pictures on a private folder structured cloud storage.  The project is mainly built with React Native and AWS.
 
 
 # Getting Started
