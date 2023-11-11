@@ -1,8 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {StyleSheet, View, SafeAreaView} from 'react-native';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {Camera, useCameraDevices} from 'react-native-vision-camera';
-import {Button, Icon} from '@rneui/themed';
 
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
@@ -25,11 +22,9 @@ Amplify.configure({
 
 const App = () => {
   const Stack = createNativeStackNavigator();
-  const device = useCameraDevices('back');
 
-  const camera = useRef(null);
   return (
-    /* <NavigationContainer>
+    <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen name="Home" component={LandingScreen} />
         <Stack.Screen name="Camera" component={AppCamera} />
@@ -40,27 +35,7 @@ const App = () => {
           component={PhotoLocationSelection}
         />
       </Stack.Navigator>
-    </NavigationContainer> */
-    <SafeAreaView style={styles.container}>
-      <SafeAreaProvider>
-        {true ? (
-          <View style={styles.photoContainer}>
-            <Camera
-              style={styles.camera}
-              device={device}
-              isActive={true}
-              ref={camera}
-              photo={true}
-            />
-            <Button
-              buttonStyle={styles.takePhotoButton}
-              containerStyle={styles.takePhotoButtonContainer}
-              //onPress={takePhotoClicked}
-            />
-          </View>
-        ) : null}
-      </SafeAreaProvider>
-    </SafeAreaView>
+    </NavigationContainer>
   );
 };
 
