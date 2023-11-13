@@ -1,5 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
-import {StyleSheet, View, SafeAreaView} from 'react-native';
+import React from 'react';
 
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';

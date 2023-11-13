@@ -3,12 +3,13 @@ import {StyleSheet, View, SafeAreaView} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import {Amplify, Storage} from 'aws-amplify';
+import keys from './keys';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
 Amplify.configure({
   Auth: {
-    identityPoolId: 'us-east-2:a5055361-55e6-4ffb-a069-3efeccbc96fd', //REQUIRED - Amazon Cognito Identity Pool ID
+    identityPoolId: keys.identityPoolId, //REQUIRED - Amazon Cognito Identity Pool ID
     region: 'us-east-2', // REQUIRED - Amazon Cognito Region
   },
 });

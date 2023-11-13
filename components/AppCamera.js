@@ -65,7 +65,6 @@ const AppCamera = ({navigation}) => {
               containerStyle={styles.editPhotoIconContainer}
               onPress={onEdit}
             />
-
             <Image source={{uri: takenPhoto.path}} style={styles.photo} />
           </View>
         ) : (
