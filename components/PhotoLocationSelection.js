@@ -3,7 +3,7 @@ import {StyleSheet, View, SafeAreaView} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import {Amplify, Storage} from 'aws-amplify';
-import keys from './keys';
+import keys from '../keys';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
