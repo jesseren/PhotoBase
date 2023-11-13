@@ -13,7 +13,8 @@ Amplify.configure({
   },
 });
 
-const PhotoLocationSelection = ({navigation, photo}) => {
+const PhotoLocationSelection = ({navigation, route}) => {
+  const {photo} = route.params;
   const sendPhoto = async () => {
     try {
       const response = await fetch(photo.path);

@@ -1,12 +1,9 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {StyleSheet, View, SafeAreaView} from 'react-native';
+import {StyleSheet, View, SafeAreaView, Image} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {
-  Camera,
-  useCameraDevices,
-  useCameraPermission,
-} from 'react-native-vision-camera';
-import {Button, Icon, Image} from '@rneui/themed';
+import {Camera, useCameraPermission} from 'react-native-vision-camera';
+import PhotoEditor from '@baronha/react-native-photo-editor';
+import {Button, Icon} from '@rneui/themed';
 
 const AppCamera = ({navigation}) => {
   const {hasPermission, requestPermission} = useCameraPermission();
@@ -20,10 +17,24 @@ const AppCamera = ({navigation}) => {
       const photo = await camera.current.takePhoto({
         flash: 'off',
       });
+      photo.path = 'file://' + photo.path;
       setTakenPhoto(photo);
     };
     takePhoto();
   };
+
+  const onEdit = async () => {
+    try {
+      const result = await PhotoEditor.open({
+        path: takenPhoto.path,
+      });
+      console.log('resultEdit: ', result);
+      setTakenPhoto({...takenPhoto, path: result});
+    } catch (e) {
+      console.log('error', e);
+    }
+  };
+
   useEffect(() => {
     const checkCameraPermissions = async () => {
       if (!hasPermission) {
@@ -40,20 +51,35 @@ const AppCamera = ({navigation}) => {
           <View>
             <Icon
               name="close"
-              type="antdesign"
+              type="fontawesome"
               color="white"
+              size={30}
               containerStyle={styles.closePhotoIconContainer}
               onPress={() => setTakenPhoto(null)}
             />
-            <Image
-              source={{uri: 'file://' + takenPhoto.path}}
-              containerStyle={styles.photo}
+            <Icon
+              name="edit"
+              type="entypo"
+              color="white"
+              size={30}
+              containerStyle={styles.editPhotoIconContainer}
+              onPress={onEdit}
             />
+
+            <Image source={{uri: takenPhoto.path}} style={styles.photo} />
           </View>
         ) : (
           <View style={styles.photoContainer}>
             {hasPermission && device ? (
               <View style={styles.cameraContainer}>
+                <Icon
+                  name="close"
+                  type="fontawesome"
+                  color="white"
+                  size={30}
+                  containerStyle={styles.closePhotoIconContainer}
+                  onPress={() => navigation.navigate('Home')}
+                />
                 <Camera
                   style={styles.camera}
                   device={device}
@@ -97,6 +123,19 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     zIndex: 1,
+    shadowColor: 'black',
+    shadowRadius: 5,
+    shadowOpacity: 1,
+  },
+  editPhotoIconContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 50,
+    height: 50,
+    zIndex: 1,
+    shadowRadius: 5,
+    shadowOpacity: 1,
   },
   takePhotoButton: {
     height: 50,
