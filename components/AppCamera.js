@@ -5,6 +5,18 @@ import {Camera, useCameraPermission} from 'react-native-vision-camera';
 import PhotoEditor from '@baronha/react-native-photo-editor';
 import {Button, Icon} from '@rneui/themed';
 
+import {Amplify, Storage} from 'aws-amplify';
+import keys from '../keys';
+import 'react-native-get-random-values';
+import 'react-native-url-polyfill/auto';
+
+Amplify.configure({
+  Auth: {
+    identityPoolId: keys.identityPoolId, //REQUIRED - Amazon Cognito Identity Pool ID
+    region: 'us-east-2', // REQUIRED - Amazon Cognito Region
+  },
+});
+
 const AppCamera = ({navigation}) => {
   const {hasPermission, requestPermission} = useCameraPermission();
   const devices = Camera.getAvailableCameraDevices();
@@ -35,6 +47,22 @@ const AppCamera = ({navigation}) => {
     }
   };
 
+  const sendPhoto = async () => {
+    try {
+      const response = await fetch(takenPhoto.path);
+      const blob = await response.blob();
+      await Storage.put(
+        `test-images/${takenPhoto.path.substring(takenPhoto.path.length - 14)}`,
+        blob,
+        {
+          contentType: 'image/jpeg', // contentType is optional
+        },
+      );
+    } catch (err) {
+      console.log('Error uploading file:', err);
+    }
+  };
+
   useEffect(() => {
     const checkCameraPermissions = async () => {
       if (!hasPermission) {
@@ -42,7 +70,7 @@ const AppCamera = ({navigation}) => {
       }
     };
     checkCameraPermissions();
-  }, [navigation, hasPermission, requestPermission]);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,6 +94,12 @@ const AppCamera = ({navigation}) => {
               onPress={onEdit}
             />
             <Image source={{uri: takenPhoto.path}} style={styles.photo} />
+            <Button
+              title={'Send'}
+              buttonStyle={styles.sendPhotoButton}
+              containerStyle={styles.sendPhotoButtonContainer}
+              onPress={sendPhoto}
+            />
           </View>
         ) : (
           <View style={styles.photoContainer}>
@@ -161,6 +195,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 20,
+    zIndex: 1,
   },
   standardText: {
     color: 'white',

@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   image: {
     height: 200,
     width: 100,
-    padding: 25,
+    margin: 10,
   },
   iconContainer: {
     alignItems: 'center',
