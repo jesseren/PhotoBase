@@ -15,8 +15,7 @@ const LandingScreen = ({navigation}) => {
     <SafeAreaView style={styles.container}>
       <SafeAreaProvider>
         <View style={styles.mainContainer}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Folders', {folder: ''})}>
+          <TouchableOpacity onPress={() => navigation.navigate('Folders')}>
             <View style={styles.iconContainer}>
               <Icon name="folder" type="entypo" color="#517fa4" size={100} />
               <Text>Browse Folders</Text>

@@ -36,38 +36,58 @@ const createPresignedUrlWithClient = ({region, bucket, key}) => {
   return getSignedUrl(client, command, {expiresIn: 3600});
 };
 
-const Folders = ({route}) => {
-  const [folder, setFolder] = useState(route.params.folder);
+const Folders = () => {
+  const [path, setPath] = useState([]);
   const [folders, setFolders] = useState([]);
   const [images, setImages] = useState([]);
-  const getItems = async () => {
+
+  const changeFolder = nextFolder => {
+    const newFolders = [];
+    const newImages = [];
+    for (const key in nextFolder) {
+      if (key.search('/') !== -1) {
+        newFolders.push(key);
+      } else {
+        newImages.push(nextFolder[key]);
+      }
+    }
+    setImages(newImages);
+    setFolders(newFolders);
+  };
+
+  const createFolderObject = async () => {
     try {
-      const response = await Storage.list(folder);
-      const newFolders = {};
-      const newImages = [];
+      const response = await Storage.list('', {pageSize: 'ALL'});
+      const main = {};
       for (const result of response.results) {
-        const key = result.key.substring(folder.length);
-        if (key.search('/') === -1) {
-          const signedURL = await createPresignedUrlWithClient({
+        const split = result.key.split('/');
+        let cur = main;
+        for (let i = 0; i < split.length - 1; i++) {
+          split[i] = split[i] + '/';
+          const newKey = split[i];
+          if (!(newKey in cur)) {
+            cur[newKey] = {};
+          }
+          cur = cur[newKey];
+        }
+        if (split[split.length - 1] !== '') {
+          cur[split[split.length - 1]] = await createPresignedUrlWithClient({
             region: 'us-east-2',
             bucket: keys.bucket,
-            key: 'public/' + folder + key,
+            key: 'public/' + result.key,
           });
-          newImages.push(signedURL);
-        } else {
-          newFolders[key.substring(0, key.search('/') + 1)] = true;
         }
       }
-      setImages(newImages);
-      setFolders(Object.keys(newFolders));
+      setPath([main]);
+      changeFolder(main);
     } catch (err) {
-      console.log('error: ' + err);
+      console.log(err);
     }
   };
 
   useEffect(() => {
-    getItems();
-  }, [folder]);
+    createFolderObject();
+  }, []);
 
   return (
     <SafeAreaView style={styles.topContainer}>
@@ -76,7 +96,13 @@ const Folders = ({route}) => {
           {folders.map(newFolder => (
             <TouchableOpacity
               onPress={() => {
-                setFolder(folder + newFolder);
+                setPath(oldPath => {
+                  const newPath = [...oldPath];
+                  const nextFolder = newPath[newPath.length - 1][newFolder];
+                  newPath.push(nextFolder);
+                  changeFolder(nextFolder);
+                  return newPath;
+                });
               }}
               key={newFolder}>
               <View style={styles.iconContainer}>
