@@ -8,7 +8,7 @@ import {
   Text,
 } from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {Amplify, Storage} from 'aws-amplify';
+import {Storage} from 'aws-amplify';
 import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import {fromCognitoIdentityPool} from '@aws-sdk/credential-providers';
@@ -16,13 +16,6 @@ import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import keys from '../keys';
 import {Icon} from '@rneui/themed';
-
-Amplify.configure({
-  Auth: {
-    identityPoolId: keys.identityPoolId, //REQUIRED - Amazon Cognito Identity Pool ID
-    region: 'us-east-2', // REQUIRED - Amazon Cognito Region
-  },
-});
 
 const createPresignedUrlWithClient = ({region, bucket, key}) => {
   const client = new S3Client({

@@ -18,7 +18,7 @@ Amplify.configure({
   },
   Storage: {
     AWSS3: {
-      bucket: 'photoshare301733dda91a445bbfef8838a001db6712609-dev', //REQUIRED -  Amazon S3 bucket name
+      bucket: keys.bucket, //REQUIRED -  Amazon S3 bucket name
       region: 'us-east-2', //OPTIONAL -  Amazon service region
     },
   },

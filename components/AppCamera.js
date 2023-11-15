@@ -5,17 +5,9 @@ import {Camera, useCameraPermission} from 'react-native-vision-camera';
 import PhotoEditor from '@baronha/react-native-photo-editor';
 import {Button, Icon} from '@rneui/themed';
 
-import {Amplify, Storage} from 'aws-amplify';
-import keys from '../keys';
+import {Storage} from 'aws-amplify';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
-
-Amplify.configure({
-  Auth: {
-    identityPoolId: keys.identityPoolId, //REQUIRED - Amazon Cognito Identity Pool ID
-    region: 'us-east-2', // REQUIRED - Amazon Cognito Region
-  },
-});
 
 const AppCamera = ({navigation}) => {
   const {hasPermission, requestPermission} = useCameraPermission();
