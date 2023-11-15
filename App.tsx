@@ -16,6 +16,12 @@ Amplify.configure({
     identityPoolId: keys.identityPoolId, //REQUIRED - Amazon Cognito Identity Pool ID
     region: 'us-east-2', // REQUIRED - Amazon Cognito Region
   },
+  Storage: {
+    AWSS3: {
+      bucket: keys.bucket, //REQUIRED -  Amazon S3 bucket name
+      region: 'us-east-2', //OPTIONAL -  Amazon service region
+    },
+  },
 });
 
 const App = () => {
@@ -35,11 +41,7 @@ const App = () => {
           component={AppCamera}
           options={defaultOptions}
         />
-        <Stack.Screen
-          name="Folders"
-          component={Folders}
-          options={defaultOptions}
-        />
+        <Stack.Screen name="Folders" component={Folders} />
         <Stack.Screen
           name="PhotoLocationSelection"
           component={PhotoLocationSelection}
