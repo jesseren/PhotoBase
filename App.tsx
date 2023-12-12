@@ -41,7 +41,11 @@ const App = () => {
           component={AppCamera}
           options={defaultOptions}
         />
-        <Stack.Screen name="Folders" component={Folders} />
+        <Stack.Screen
+          name="Folders"
+          component={Folders}
+          options={defaultOptions}
+        />
         <Stack.Screen
           name="PhotoLocationSelection"
           component={PhotoLocationSelection}

@@ -30,7 +30,7 @@ const createPresignedUrlWithClient = ({region, bucket, key}) => {
   return getSignedUrl(client, command, {expiresIn: 3600});
 };
 
-const Folders = () => {
+const Folders = ({navigation}) => {
   const [path, setPath] = useState([]);
   const [pathString, setPathString] = useState('');
   const [folders, setFolders] = useState([]);
@@ -39,7 +39,7 @@ const Folders = () => {
   const [newFolderName, setNewFolderName] = useState('');
   const [addError, setAddError] = useState('');
 
-  const changeFolder = async (nextFolder, folderName) => {
+  const changeFolder = async nextFolder => {
     const newFolders = [];
     const newImages = [];
     for (const key in nextFolder) {
@@ -56,7 +56,6 @@ const Folders = () => {
     }
     setImages(newImages);
     setFolders(newFolders);
-    setPathString(pathString + folderName);
   };
 
   const createNewFolder = async () => {
@@ -105,9 +104,34 @@ const Folders = () => {
         }
       }
       setPath([main]);
-      changeFolder(main, '');
+      changeFolder(main);
     } catch (err) {
       console.log(err);
+    }
+  };
+
+  const goBack = () => {
+    if (path.length === 1) {
+      navigation.navigate('Home');
+    } else {
+      setPath(oldPath => {
+        const newPath = [...oldPath];
+        newPath.pop();
+        changeFolder(newPath[newPath.length - 1]);
+        let cur = 0;
+        for (let i = 0; i < pathString.length - 1; i++) {
+          if (pathString.at(i) === '/') {
+            cur = i;
+          }
+        }
+        if (cur === 0) {
+          setPathString('');
+        } else {
+          setPathString(pathString.substring(0, cur + 1));
+        }
+
+        return newPath;
+      });
     }
   };
 
@@ -118,21 +142,29 @@ const Folders = () => {
   return (
     <SafeAreaView style={styles.topContainer}>
       <SafeAreaProvider>
-        <Button
-          title="Add"
-          icon={{
-            name: 'addfolder',
-            type: 'ant-design',
-            size: 15,
-            color: '#517fa4',
-          }}
-          containerStyle={styles.addContainer}
-          buttonStyle={styles.addStyle}
-          titleStyle={styles.addTitleStyle}
-          onPress={() => {
-            setDisplayAddFolder(true);
-          }}
-        />
+        <View style={styles.topButtonsContainer}>
+          <Button
+            containerStyle={styles.addContainer}
+            buttonStyle={styles.addStyle}
+            onPress={goBack}>
+            <Icon name="arrow-back" type="ionicon" size={25} />
+          </Button>
+          <Button
+            title="Add"
+            icon={{
+              name: 'addfolder',
+              type: 'ant-design',
+              size: 15,
+              color: '#517fa4',
+            }}
+            containerStyle={styles.addContainer}
+            buttonStyle={styles.addStyle}
+            titleStyle={styles.addTitleStyle}
+            onPress={() => {
+              setDisplayAddFolder(true);
+            }}
+          />
+        </View>
         <Dialog
           isVisible={displayAddFolder}
           onBackdropPress={() => {
@@ -167,7 +199,8 @@ const Folders = () => {
                         const newPath = [...oldPath];
                         const nextFolder = newPath[newPath.length - 1][item];
                         newPath.push(nextFolder);
-                        changeFolder(nextFolder, item);
+                        setPathString(pathString + item);
+                        changeFolder(nextFolder);
                         return newPath;
                       });
                     }}>
@@ -207,9 +240,13 @@ const styles = StyleSheet.create({
     flex: 1,
     width: 375,
   },
+  topButtonsContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+  },
   addContainer: {
     width: 100,
-    alignSelf: 'flex-end',
   },
   addStyle: {
     backgroundColor: null,
