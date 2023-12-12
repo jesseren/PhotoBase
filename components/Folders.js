@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   Text,
+  FlatList,
 } from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Storage} from 'aws-amplify';
@@ -38,14 +39,19 @@ const Folders = () => {
   const [newFolderName, setNewFolderName] = useState('');
   const [addError, setAddError] = useState('');
 
-  const changeFolder = (nextFolder, folderName) => {
+  const changeFolder = async (nextFolder, folderName) => {
     const newFolders = [];
     const newImages = [];
     for (const key in nextFolder) {
       if (key.search('/') !== -1) {
         newFolders.push(key);
       } else {
-        newImages.push(nextFolder[key]);
+        const image = await createPresignedUrlWithClient({
+          region: 'us-east-2',
+          bucket: keys.bucket,
+          key: 'public/' + nextFolder[key],
+        });
+        newImages.push(image);
       }
     }
     setImages(newImages);
@@ -63,6 +69,7 @@ const Folders = () => {
     setPath(oldPath => {
       const newPath = [...oldPath];
       newPath[newPath.length - 1][newFolderName + '/'] = {};
+      return newPath;
     });
     setDisplayAddFolder(false);
   };
@@ -74,6 +81,7 @@ const Folders = () => {
       setAddError('Folder name already exists');
     } else {
       createNewFolder();
+      setNewFolderName('');
     }
   };
 
@@ -93,11 +101,7 @@ const Folders = () => {
           cur = cur[newKey];
         }
         if (split[split.length - 1] !== '') {
-          cur[split[split.length - 1]] = await createPresignedUrlWithClient({
-            region: 'us-east-2',
-            bucket: keys.bucket,
-            key: 'public/' + result.key,
-          });
+          cur[split[split.length - 1]] = result.key;
         }
       }
       setPath([main]);
@@ -132,7 +136,7 @@ const Folders = () => {
         <Dialog
           isVisible={displayAddFolder}
           onBackdropPress={() => {
-            setDisplayAddFolder(!displayAddFolder);
+            setDisplayAddFolder(false);
             setNewFolderName('');
             setAddError('');
           }}>
@@ -142,7 +146,7 @@ const Folders = () => {
             onChangeText={val => setNewFolderName(val)}
             value={newFolderName}
           />
-          {addError !== '' && <Text>{addError}</Text>}
+          {addError !== '' && <Text style={styles.error}>{addError}</Text>}
           <Button
             title="Add"
             containerStyle={styles.addContainer}
@@ -153,34 +157,37 @@ const Folders = () => {
         </Dialog>
         <View style={styles.mainContainer}>
           <View style={styles.container}>
-            {folders.map(newFolder => (
-              <TouchableOpacity
-                onPress={() => {
-                  setPath(oldPath => {
-                    const newPath = [...oldPath];
-                    const nextFolder = newPath[newPath.length - 1][newFolder];
-                    newPath.push(nextFolder);
-                    changeFolder(nextFolder, newFolder);
-                    return newPath;
-                  });
-                }}
-                key={newFolder}>
-                <View style={styles.iconContainer}>
-                  <Icon
-                    name="folder"
-                    type="entypo"
-                    color="#517fa4"
-                    size={100}
-                  />
-                  <Text>{newFolder}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            <View style={styles.container}>
-              {images.map(image => (
-                <Image source={{uri: image}} style={styles.image} key={image} />
-              ))}
-            </View>
+            <FlatList
+              data={[...folders, ...images]}
+              renderItem={({item, index}) =>
+                index < folders.length ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setPath(oldPath => {
+                        const newPath = [...oldPath];
+                        const nextFolder = newPath[newPath.length - 1][item];
+                        newPath.push(nextFolder);
+                        changeFolder(nextFolder, item);
+                        return newPath;
+                      });
+                    }}>
+                    <View style={styles.iconContainer}>
+                      <Icon
+                        name="folder"
+                        type="entypo"
+                        color="#517fa4"
+                        size={100}
+                      />
+                      <Text>{item}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <Image source={{uri: item}} style={styles.image} />
+                )
+              }
+              keyExtractor={item => item}
+              numColumns={3}
+            />
           </View>
         </View>
       </SafeAreaProvider>
@@ -198,8 +205,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     width: 375,
   },
   addContainer: {
@@ -212,9 +217,12 @@ const styles = StyleSheet.create({
   addTitleStyle: {
     color: '#517fa4',
   },
+  error: {
+    color: 'red',
+  },
   image: {
     height: 200,
-    width: 100,
+    width: 105,
     margin: 10,
   },
   iconContainer: {
