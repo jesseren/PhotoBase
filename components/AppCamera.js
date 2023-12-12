@@ -32,7 +32,6 @@ const AppCamera = ({navigation}) => {
       const result = await PhotoEditor.open({
         path: takenPhoto.path,
       });
-      console.log('resultEdit: ', result);
       setTakenPhoto({...takenPhoto, path: result});
     } catch (e) {
       console.log('error', e);

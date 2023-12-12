@@ -39,6 +39,11 @@ const Folders = ({navigation}) => {
   const [newFolderName, setNewFolderName] = useState('');
   const [addError, setAddError] = useState('');
 
+  const getCurFolderName = () => {
+    const names = pathString.split('/');
+    return names.length <= 1 ? 'root' : names[names.length - 2];
+  };
+
   const changeFolder = async nextFolder => {
     const newFolders = [];
     const newImages = [];
@@ -148,6 +153,7 @@ const Folders = ({navigation}) => {
             onPress={goBack}>
             <Icon name="arrow-back" type="ionicon" size={25} />
           </Button>
+          <Text style={styles.folderName}>{getCurFolderName()}</Text>
           <Button
             title="Add"
             icon={{
@@ -243,6 +249,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   addContainer: {
     width: 100,
@@ -265,6 +272,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 5,
     width: 125,
+  },
+  folderName: {
+    fontWeight: 'bold',
+    fontSize: 20,
   },
 });
 
