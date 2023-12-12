@@ -111,27 +111,26 @@ const Folders = ({navigation}) => {
   };
 
   const goBack = () => {
-    if (path.length === 1) {
+    if (path.length <= 1) {
       navigation.navigate('Home');
     } else {
+      changeFolder(path[path.length - 2]);
       setPath(oldPath => {
         const newPath = [...oldPath];
         newPath.pop();
-        changeFolder(newPath[newPath.length - 1]);
-        let cur = 0;
-        for (let i = 0; i < pathString.length - 1; i++) {
-          if (pathString.at(i) === '/') {
-            cur = i;
-          }
-        }
-        if (cur === 0) {
-          setPathString('');
-        } else {
-          setPathString(pathString.substring(0, cur + 1));
-        }
-
         return newPath;
       });
+      let cur = 0;
+      for (let i = 0; i < pathString.length - 1; i++) {
+        if (pathString.at(i) === '/') {
+          cur = i;
+        }
+      }
+      if (cur === 0) {
+        setPathString('');
+      } else {
+        setPathString(pathString.substring(0, cur + 1));
+      }
     }
   };
 
@@ -195,12 +194,12 @@ const Folders = ({navigation}) => {
                 index < folders.length ? (
                   <TouchableOpacity
                     onPress={() => {
+                      const nextFolder = path[path.length - 1][item];
+                      setPathString(pathString + item);
+                      changeFolder(nextFolder);
                       setPath(oldPath => {
                         const newPath = [...oldPath];
-                        const nextFolder = newPath[newPath.length - 1][item];
                         newPath.push(nextFolder);
-                        setPathString(pathString + item);
-                        changeFolder(nextFolder);
                         return newPath;
                       });
                     }}>
