@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {Camera} from 'react-native-vision-camera';
 import {Icon} from '@rneui/themed';
 
 const LandingScreen = ({navigation}) => {
@@ -15,7 +14,10 @@ const LandingScreen = ({navigation}) => {
     <SafeAreaView style={styles.container}>
       <SafeAreaProvider>
         <View style={styles.mainContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('Folders')}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('Folders', {blob: null, name: null})
+            }>
             <View style={styles.iconContainer}>
               <Icon name="folder" type="entypo" color="#517fa4" size={100} />
               <Text>Browse Folders</Text>

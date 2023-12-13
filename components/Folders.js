@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   Text,
+  FlatList,
 } from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Storage} from 'aws-amplify';
@@ -15,7 +16,7 @@ import {fromCognitoIdentityPool} from '@aws-sdk/credential-providers';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import keys from '../keys';
-import {Icon} from '@rneui/themed';
+import {Icon, Button, Dialog, Input} from '@rneui/themed';
 
 const createPresignedUrlWithClient = ({region, bucket, key}) => {
   const client = new S3Client({
@@ -29,23 +30,64 @@ const createPresignedUrlWithClient = ({region, bucket, key}) => {
   return getSignedUrl(client, command, {expiresIn: 3600});
 };
 
-const Folders = () => {
+const Folders = ({navigation, route}) => {
   const [path, setPath] = useState([]);
+  const [pathString, setPathString] = useState('');
   const [folders, setFolders] = useState([]);
   const [images, setImages] = useState([]);
+  const [displayAddFolder, setDisplayAddFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [addError, setAddError] = useState('');
+  const {blob, name} = route.params;
 
-  const changeFolder = nextFolder => {
+  const getCurFolderName = () => {
+    const names = pathString.split('/');
+    return names.length <= 1 ? 'root' : names[names.length - 2];
+  };
+
+  const changeFolder = async nextFolder => {
     const newFolders = [];
     const newImages = [];
     for (const key in nextFolder) {
       if (key.search('/') !== -1) {
         newFolders.push(key);
       } else {
-        newImages.push(nextFolder[key]);
+        const image = await createPresignedUrlWithClient({
+          region: 'us-east-2',
+          bucket: keys.bucket,
+          key: 'public/' + nextFolder[key],
+        });
+        newImages.push({uri: image, height: 200});
       }
     }
     setImages(newImages);
     setFolders(newFolders);
+  };
+
+  const createNewFolder = async () => {
+    await Storage.put(pathString + newFolderName + '/');
+    setFolders(oldFolders => {
+      const newFolders = [...oldFolders];
+      newFolders.push(newFolderName + '/');
+      return newFolders;
+    });
+    setPath(oldPath => {
+      const newPath = [...oldPath];
+      newPath[newPath.length - 1][newFolderName + '/'] = {};
+      return newPath;
+    });
+    setDisplayAddFolder(false);
+  };
+
+  const addFolder = () => {
+    if (newFolderName.search('/') !== -1) {
+      setAddError('Folder name cannot contain "/"');
+    } else if (newFolderName + '/' in path[path.length - 1]) {
+      setAddError('Folder name already exists');
+    } else {
+      createNewFolder();
+      setNewFolderName('');
+    }
   };
 
   const createFolderObject = async () => {
@@ -64,17 +106,44 @@ const Folders = () => {
           cur = cur[newKey];
         }
         if (split[split.length - 1] !== '') {
-          cur[split[split.length - 1]] = await createPresignedUrlWithClient({
-            region: 'us-east-2',
-            bucket: keys.bucket,
-            key: 'public/' + result.key,
-          });
+          cur[split[split.length - 1]] = result.key;
         }
       }
       setPath([main]);
       changeFolder(main);
     } catch (err) {
       console.log(err);
+    }
+  };
+
+  const goBack = () => {
+    if (path.length <= 1) {
+      navigation.navigate('Home');
+    } else {
+      changeFolder(path[path.length - 2]);
+      setPath(oldPath => {
+        const newPath = [...oldPath];
+        newPath.pop();
+        return newPath;
+      });
+      let cur = 0;
+      for (let i = 0; i < pathString.length - 1; i++) {
+        if (pathString.at(i) === '/') {
+          cur = i;
+        }
+      }
+      setPathString(cur === 0 ? '' : pathString.substring(0, cur + 1));
+    }
+  };
+
+  const sendPhoto = async () => {
+    try {
+      await Storage.put(pathString + name, blob, {
+        contentType: 'image/jpeg', // contentType is optional
+      });
+      navigation.navigate('Home');
+    } catch (err) {
+      console.log('Error uploading file:', err);
     }
   };
 
@@ -85,31 +154,117 @@ const Folders = () => {
   return (
     <SafeAreaView style={styles.topContainer}>
       <SafeAreaProvider>
-        <View style={styles.container}>
-          {folders.map(newFolder => (
-            <TouchableOpacity
-              onPress={() => {
-                setPath(oldPath => {
-                  const newPath = [...oldPath];
-                  const nextFolder = newPath[newPath.length - 1][newFolder];
-                  newPath.push(nextFolder);
-                  changeFolder(nextFolder);
-                  return newPath;
-                });
-              }}
-              key={newFolder}>
-              <View style={styles.iconContainer}>
-                <Icon name="folder" type="entypo" color="#517fa4" size={100} />
-                <Text>{newFolder}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.topButtonsContainer}>
+          <Button
+            containerStyle={styles.addContainer}
+            buttonStyle={styles.addStyle}
+            onPress={goBack}>
+            <Icon
+              name="arrow-back"
+              type="ionicon"
+              size={25}
+              color={'#517fa4'}
+            />
+          </Button>
+          <Text style={styles.folderName}>{getCurFolderName()}</Text>
+          <Button
+            title="Add"
+            icon={{
+              name: 'addfolder',
+              type: 'ant-design',
+              size: 15,
+              color: '#517fa4',
+            }}
+            containerStyle={styles.addContainer}
+            buttonStyle={styles.addStyle}
+            titleStyle={styles.addTitleStyle}
+            onPress={() => {
+              setDisplayAddFolder(true);
+            }}
+          />
+        </View>
+        <Dialog
+          isVisible={displayAddFolder}
+          onBackdropPress={() => {
+            setDisplayAddFolder(false);
+            setNewFolderName('');
+            setAddError('');
+          }}>
+          <Dialog.Title title="Add Folder" />
+          <Input
+            placeholder="Enter Folder Name"
+            onChangeText={val => setNewFolderName(val)}
+            value={newFolderName}
+          />
+          {addError !== '' && <Text style={styles.error}>{addError}</Text>}
+          <Button
+            title="Add"
+            containerStyle={styles.addContainer}
+            buttonStyle={styles.addStyle}
+            titleStyle={styles.addTitleStyle}
+            onPress={() => addFolder()}
+          />
+        </Dialog>
+        <View style={styles.mainContainer}>
           <View style={styles.container}>
-            {images.map(image => (
-              <Image source={{uri: image}} style={styles.image} key={image} />
-            ))}
+            <FlatList
+              data={[...folders, ...images]}
+              renderItem={({item, index}) =>
+                index < folders.length ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      const nextFolder = path[path.length - 1][item];
+                      setPathString(pathString + item);
+                      changeFolder(nextFolder);
+                      setPath(oldPath => {
+                        const newPath = [...oldPath];
+                        newPath.push(nextFolder);
+                        return newPath;
+                      });
+                    }}>
+                    <View style={styles.iconContainer}>
+                      <Icon
+                        name="folder"
+                        type="entypo"
+                        color="#517fa4"
+                        size={100}
+                      />
+                      <Text>{item}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <Image
+                    source={{uri: item.uri}}
+                    style={styles.image}
+                    height={item.height}
+                    width={105}
+                    onLoad={({
+                      nativeEvent: {
+                        source: {width, height},
+                      },
+                    }) =>
+                      setImages(oldImages => {
+                        const newImages = [...oldImages];
+                        newImages[index - folders.length].height =
+                          (height / width) * 105;
+                        return newImages;
+                      })
+                    }
+                  />
+                )
+              }
+              keyExtractor={item => (item.uri ? item.uri : item)}
+              numColumns={3}
+            />
           </View>
         </View>
+        {blob && (
+          <Button
+            title={'send'}
+            containerStyle={styles.sendButtonContainer}
+            onPress={sendPhoto}
+          />
+        )}
       </SafeAreaProvider>
     </SafeAreaView>
   );
@@ -119,19 +274,49 @@ const styles = StyleSheet.create({
   topContainer: {
     flex: 1,
   },
+  mainContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
+    width: 375,
+  },
+  topButtonsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  addContainer: {
+    width: 100,
+  },
+  addStyle: {
+    backgroundColor: null,
+  },
+  addTitleStyle: {
+    color: '#517fa4',
+  },
+  error: {
+    color: 'red',
   },
   image: {
-    height: 200,
-    width: 100,
     margin: 10,
   },
   iconContainer: {
     alignItems: 'center',
-    padding: 25,
+    padding: 5,
+    width: 125,
+  },
+  folderName: {
+    fontWeight: 'bold',
+    fontSize: 20,
+  },
+  sendButtonContainer: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    zIndex: 1,
   },
 });
 

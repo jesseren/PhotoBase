@@ -1,11 +1,11 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {StyleSheet, View, SafeAreaView, Image} from 'react-native';
+import {StyleSheet, View, SafeAreaView, Image, Platform} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Camera, useCameraPermission} from 'react-native-vision-camera';
 import PhotoEditor from '@baronha/react-native-photo-editor';
 import {Button, Icon} from '@rneui/themed';
+import {gravity} from 'react-native-sensors';
 
-import {Storage} from 'aws-amplify';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
@@ -14,6 +14,7 @@ const AppCamera = ({navigation}) => {
   const devices = Camera.getAvailableCameraDevices();
   const device = devices.find(d => d.position === 'back');
   const camera = useRef(null);
+  const orientation = useRef(null);
   const [takenPhoto, setTakenPhoto] = useState(null);
 
   const takePhotoClicked = () => {
@@ -24,6 +25,44 @@ const AppCamera = ({navigation}) => {
       photo.path = 'file://' + photo.path;
       setTakenPhoto(photo);
     };
+    const subscription = gravity.subscribe(({x, y}) => {
+      const radian = Math.atan2(y, x);
+      const degree = (radian * 180) / Math.PI;
+
+      let rotation = 'left';
+      if (degree > -135) {
+        rotation = 'top';
+      }
+      if (degree > -45) {
+        rotation = 'right';
+      }
+      if (degree > 45) {
+        rotation = 'down';
+      }
+      if (degree > 135) {
+        rotation = 'left';
+      }
+
+      if (Platform.OS === 'android') {
+        rotation = 'right';
+        if (degree > -135) {
+          rotation = 'down';
+        }
+        if (degree > -45) {
+          rotation = 'left';
+        }
+        if (degree > 45) {
+          rotation = 'top';
+        }
+        if (degree > 135) {
+          rotation = 'right';
+        }
+      }
+      orientation.current = rotation;
+    });
+    setTimeout(() => {
+      subscription.unsubscribe();
+    }, 100);
     takePhoto();
   };
 
@@ -32,7 +71,6 @@ const AppCamera = ({navigation}) => {
       const result = await PhotoEditor.open({
         path: takenPhoto.path,
       });
-      console.log('resultEdit: ', result);
       setTakenPhoto({...takenPhoto, path: result});
     } catch (e) {
       console.log('error', e);
@@ -43,13 +81,10 @@ const AppCamera = ({navigation}) => {
     try {
       const response = await fetch(takenPhoto.path);
       const blob = await response.blob();
-      await Storage.put(
-        `test-images/${takenPhoto.path.substring(takenPhoto.path.length - 14)}`,
-        blob,
-        {
-          contentType: 'image/jpeg', // contentType is optional
-        },
-      );
+      navigation.navigate('Folders', {
+        blob: blob,
+        name: takenPhoto.path.substring(takenPhoto.path.length - 14),
+      });
     } catch (err) {
       console.log('Error uploading file:', err);
     }
