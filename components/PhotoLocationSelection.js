@@ -7,13 +7,6 @@ import keys from '../keys';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
-Amplify.configure({
-  Auth: {
-    identityPoolId: keys.identityPoolId, //REQUIRED - Amazon Cognito Identity Pool ID
-    region: 'us-east-2', // REQUIRED - Amazon Cognito Region
-  },
-});
-
 const PhotoLocationSelection = ({navigation, route}) => {
   const {photo} = route.params;
   const sendPhoto = async () => {

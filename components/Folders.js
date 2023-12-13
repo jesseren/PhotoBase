@@ -30,7 +30,7 @@ const createPresignedUrlWithClient = ({region, bucket, key}) => {
   return getSignedUrl(client, command, {expiresIn: 3600});
 };
 
-const Folders = ({navigation}) => {
+const Folders = ({navigation, route}) => {
   const [path, setPath] = useState([]);
   const [pathString, setPathString] = useState('');
   const [folders, setFolders] = useState([]);
@@ -38,6 +38,7 @@ const Folders = ({navigation}) => {
   const [displayAddFolder, setDisplayAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [addError, setAddError] = useState('');
+  const {blob, name} = route.params;
 
   const getCurFolderName = () => {
     const names = pathString.split('/');
@@ -56,7 +57,7 @@ const Folders = ({navigation}) => {
           bucket: keys.bucket,
           key: 'public/' + nextFolder[key],
         });
-        newImages.push(image);
+        newImages.push({uri: image, height: 200});
       }
     }
     setImages(newImages);
@@ -131,11 +132,18 @@ const Folders = ({navigation}) => {
           cur = i;
         }
       }
-      if (cur === 0) {
-        setPathString('');
-      } else {
-        setPathString(pathString.substring(0, cur + 1));
-      }
+      setPathString(cur === 0 ? '' : pathString.substring(0, cur + 1));
+    }
+  };
+
+  const sendPhoto = async () => {
+    try {
+      await Storage.put(pathString + name, blob, {
+        contentType: 'image/jpeg', // contentType is optional
+      });
+      navigation.navigate('Home');
+    } catch (err) {
+      console.log('Error uploading file:', err);
     }
   };
 
@@ -151,7 +159,12 @@ const Folders = ({navigation}) => {
             containerStyle={styles.addContainer}
             buttonStyle={styles.addStyle}
             onPress={goBack}>
-            <Icon name="arrow-back" type="ionicon" size={25} />
+            <Icon
+              name="arrow-back"
+              type="ionicon"
+              size={25}
+              color={'#517fa4'}
+            />
           </Button>
           <Text style={styles.folderName}>{getCurFolderName()}</Text>
           <Button
@@ -220,14 +233,38 @@ const Folders = ({navigation}) => {
                     </View>
                   </TouchableOpacity>
                 ) : (
-                  <Image source={{uri: item}} style={styles.image} />
+                  <Image
+                    source={{uri: item.uri}}
+                    style={styles.image}
+                    height={item.height}
+                    width={105}
+                    onLoad={({
+                      nativeEvent: {
+                        source: {width, height},
+                      },
+                    }) =>
+                      setImages(oldImages => {
+                        const newImages = [...oldImages];
+                        newImages[index - folders.length].height =
+                          (height / width) * 105;
+                        return newImages;
+                      })
+                    }
+                  />
                 )
               }
-              keyExtractor={item => item}
+              keyExtractor={item => (item.uri ? item.uri : item)}
               numColumns={3}
             />
           </View>
         </View>
+        {blob && (
+          <Button
+            title={'send'}
+            containerStyle={styles.sendButtonContainer}
+            onPress={sendPhoto}
+          />
+        )}
       </SafeAreaProvider>
     </SafeAreaView>
   );
@@ -264,8 +301,6 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   image: {
-    height: 200,
-    width: 105,
     margin: 10,
   },
   iconContainer: {
@@ -276,6 +311,12 @@ const styles = StyleSheet.create({
   folderName: {
     fontWeight: 'bold',
     fontSize: 20,
+  },
+  sendButtonContainer: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    zIndex: 1,
   },
 });
 
