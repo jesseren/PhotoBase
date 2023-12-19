@@ -38,7 +38,7 @@ const Folders = ({navigation, route}) => {
   const [displayAddFolder, setDisplayAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [addError, setAddError] = useState('');
-  const {blob, name} = route.params;
+  const {blob, name, metadata} = route.params;
 
   const getCurFolderName = () => {
     const names = pathString.split('/');
@@ -140,6 +140,7 @@ const Folders = ({navigation, route}) => {
     try {
       await Storage.put(pathString + name, blob, {
         contentType: 'image/jpeg', // contentType is optional
+        metadata: metadata,
       });
       navigation.navigate('Home');
     } catch (err) {

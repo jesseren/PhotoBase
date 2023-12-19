@@ -16,7 +16,11 @@ const LandingScreen = ({navigation}) => {
         <View style={styles.mainContainer}>
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('Folders', {blob: null, name: null})
+              navigation.navigate('Folders', {
+                blob: null,
+                name: null,
+                metadata: null,
+              })
             }>
             <View style={styles.iconContainer}>
               <Icon name="folder" type="entypo" color="#517fa4" size={100} />

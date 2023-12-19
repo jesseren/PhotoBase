@@ -14,7 +14,7 @@ const AppCamera = ({navigation}) => {
   const devices = Camera.getAvailableCameraDevices();
   const device = devices.find(d => d.position === 'back');
   const camera = useRef(null);
-  const orientation = useRef(null);
+  const [orientation, setOrientation] = useState('top');
   const [takenPhoto, setTakenPhoto] = useState(null);
 
   const takePhotoClicked = () => {
@@ -58,7 +58,7 @@ const AppCamera = ({navigation}) => {
           rotation = 'right';
         }
       }
-      orientation.current = rotation;
+      setOrientation(rotation);
     });
     setTimeout(() => {
       subscription.unsubscribe();
@@ -84,6 +84,10 @@ const AppCamera = ({navigation}) => {
       navigation.navigate('Folders', {
         blob: blob,
         name: takenPhoto.path.substring(takenPhoto.path.length - 14),
+        metadata: {
+          current_orientation: 'top',
+          expected_orientation: orientation,
+        },
       });
     } catch (err) {
       console.log('Error uploading file:', err);
