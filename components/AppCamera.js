@@ -1,11 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {StyleSheet, View, SafeAreaView, Image, Platform} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {
-  Camera,
-  useCameraPermission,
-  CodeScanner,
-} from 'react-native-vision-camera';
+import {Camera, useCameraPermission} from 'react-native-vision-camera';
 import PhotoEditor from '@baronha/react-native-photo-editor';
 import {Button, Icon} from '@rneui/themed';
 import {gravity} from 'react-native-sensors';

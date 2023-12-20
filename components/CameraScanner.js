@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {StyleSheet, View, SafeAreaView} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Camera, useCameraPermission} from 'react-native-vision-camera';
