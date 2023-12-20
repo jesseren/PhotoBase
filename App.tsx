@@ -8,7 +8,6 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import LandingScreen from './components/LandingScreen';
 import AppCamera from './components/AppCamera';
 import Folders from './components/Folders';
-import PhotoLocationSelection from './components/PhotoLocationSelection';
 import keys from './keys';
 
 Amplify.configure({
@@ -45,10 +44,6 @@ const App = () => {
           name="Folders"
           component={Folders}
           options={defaultOptions}
-        />
-        <Stack.Screen
-          name="PhotoLocationSelection"
-          component={PhotoLocationSelection}
         />
       </Stack.Navigator>
     </NavigationContainer>
