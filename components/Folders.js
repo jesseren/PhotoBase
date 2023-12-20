@@ -66,6 +66,20 @@ const Folders = ({navigation, route}) => {
 
   const createNewFolder = async () => {
     await Storage.put(pathString + newFolderName + '/');
+    let newFolder = {};
+    if (path.length === 1) {
+      console.log('added');
+      await Storage.put(pathString + newFolderName + '/' + 'in/');
+      await Storage.put(pathString + newFolderName + '/' + 'out/');
+      await Storage.put(pathString + newFolderName + '/' + 'supplement/');
+      await Storage.put(pathString + newFolderName + '/' + 'default/');
+      newFolder = {
+        'in/': {},
+        'out/': {},
+        'supplement/': {},
+        'default/': {},
+      };
+    }
     setFolders(oldFolders => {
       const newFolders = [...oldFolders];
       newFolders.push(newFolderName + '/');
@@ -73,7 +87,7 @@ const Folders = ({navigation, route}) => {
     });
     setPath(oldPath => {
       const newPath = [...oldPath];
-      newPath[newPath.length - 1][newFolderName + '/'] = {};
+      newPath[newPath.length - 1][newFolderName + '/'] = newFolder;
       return newPath;
     });
     setDisplayAddFolder(false);
