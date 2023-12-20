@@ -68,7 +68,6 @@ const Folders = ({navigation, route}) => {
     await Storage.put(pathString + newFolderName + '/');
     let newFolder = {};
     if (path.length === 1) {
-      console.log('added');
       await Storage.put(pathString + newFolderName + '/' + 'in/');
       await Storage.put(pathString + newFolderName + '/' + 'out/');
       await Storage.put(pathString + newFolderName + '/' + 'supplement/');
