@@ -1,7 +1,11 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {StyleSheet, View, SafeAreaView, Image, Platform} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {Camera, useCameraPermission} from 'react-native-vision-camera';
+import {
+  Camera,
+  useCameraPermission,
+  CodeScanner,
+} from 'react-native-vision-camera';
 import PhotoEditor from '@baronha/react-native-photo-editor';
 import {Button, Icon} from '@rneui/themed';
 import {gravity} from 'react-native-sensors';
@@ -134,7 +138,7 @@ const AppCamera = ({navigation}) => {
           </View>
         ) : (
           <View style={styles.photoContainer}>
-            {hasPermission && device ? (
+            {hasPermission && device && (
               <View style={styles.cameraContainer}>
                 <Icon
                   name="close"
@@ -152,7 +156,7 @@ const AppCamera = ({navigation}) => {
                   ref={camera}
                 />
               </View>
-            ) : null}
+            )}
             <Button
               buttonStyle={styles.takePhotoButton}
               containerStyle={styles.takePhotoButtonContainer}

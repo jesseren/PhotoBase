@@ -17,6 +17,7 @@ import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import keys from '../keys';
 import {Icon, Button, Dialog, Input} from '@rneui/themed';
+import CameraScanner from './CameraScanner';
 
 const createPresignedUrlWithClient = ({region, bucket, key}) => {
   const client = new S3Client({
@@ -38,6 +39,7 @@ const Folders = ({navigation, route}) => {
   const [displayAddFolder, setDisplayAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [addError, setAddError] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
   const {blob, name, metadata} = route.params;
 
   const getCurFolderName = () => {
@@ -168,116 +170,134 @@ const Folders = ({navigation, route}) => {
   return (
     <SafeAreaView style={styles.topContainer}>
       <SafeAreaProvider>
-        <View style={styles.topButtonsContainer}>
-          <Button
-            containerStyle={styles.addContainer}
-            buttonStyle={styles.addStyle}
-            onPress={goBack}>
-            <Icon
-              name="arrow-back"
-              type="ionicon"
-              size={25}
-              color={'#517fa4'}
-            />
-          </Button>
-          <Text style={styles.folderName}>{getCurFolderName()}</Text>
-          <Button
-            title="Add"
-            icon={{
-              name: 'addfolder',
-              type: 'ant-design',
-              size: 15,
-              color: '#517fa4',
-            }}
-            containerStyle={styles.addContainer}
-            buttonStyle={styles.addStyle}
-            titleStyle={styles.addTitleStyle}
-            onPress={() => {
-              setDisplayAddFolder(true);
-            }}
+        {scannerOpen ? (
+          <CameraScanner
+            setCode={setNewFolderName}
+            close={() => setScannerOpen(false)}
           />
-        </View>
-        <Dialog
-          isVisible={displayAddFolder}
-          onBackdropPress={() => {
-            setDisplayAddFolder(false);
-            setNewFolderName('');
-            setAddError('');
-          }}>
-          <Dialog.Title title="Add Folder" />
-          <Input
-            placeholder="Enter Folder Name"
-            onChangeText={val => setNewFolderName(val)}
-            value={newFolderName}
-          />
-          {addError !== '' && <Text style={styles.error}>{addError}</Text>}
-          <Button
-            title="Add"
-            containerStyle={styles.addContainer}
-            buttonStyle={styles.addStyle}
-            titleStyle={styles.addTitleStyle}
-            onPress={() => addFolder()}
-          />
-        </Dialog>
-        <View style={styles.mainContainer}>
-          <View style={styles.container}>
-            <FlatList
-              data={[...folders, ...images]}
-              renderItem={({item, index}) =>
-                index < folders.length ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      const nextFolder = path[path.length - 1][item];
-                      setPathString(pathString + item);
-                      changeFolder(nextFolder);
-                      setPath(oldPath => {
-                        const newPath = [...oldPath];
-                        newPath.push(nextFolder);
-                        return newPath;
-                      });
-                    }}>
-                    <View style={styles.iconContainer}>
-                      <Icon
-                        name="folder"
-                        type="entypo"
-                        color="#517fa4"
-                        size={100}
+        ) : (
+          <View style={styles.topContainer}>
+            <View style={styles.topButtonsContainer}>
+              <Button
+                containerStyle={styles.addContainer}
+                buttonStyle={styles.addStyle}
+                onPress={goBack}>
+                <Icon
+                  name="arrow-back"
+                  type="ionicon"
+                  size={25}
+                  color={'#517fa4'}
+                />
+              </Button>
+              <Text style={styles.folderName}>{getCurFolderName()}</Text>
+              <Button
+                title="Add"
+                icon={{
+                  name: 'addfolder',
+                  type: 'ant-design',
+                  size: 15,
+                  color: '#517fa4',
+                }}
+                containerStyle={styles.addContainer}
+                buttonStyle={styles.addStyle}
+                titleStyle={styles.addTitleStyle}
+                onPress={() => {
+                  setDisplayAddFolder(true);
+                }}
+              />
+            </View>
+            <Dialog
+              isVisible={displayAddFolder}
+              onBackdropPress={() => {
+                setDisplayAddFolder(false);
+                setNewFolderName('');
+                setAddError('');
+              }}>
+              <Dialog.Title title="Add Folder" />
+              <Input
+                placeholder="Enter Folder Name"
+                onChangeText={val => setNewFolderName(val)}
+                value={newFolderName}
+              />
+              {addError !== '' && <Text style={styles.error}>{addError}</Text>}
+              <View style={styles.dialogueButtonsContainer}>
+                <Button
+                  title="Scan"
+                  containerStyle={styles.addContainer}
+                  buttonStyle={styles.addStyle}
+                  titleStyle={styles.addTitleStyle}
+                  onPress={() => setScannerOpen(true)}
+                />
+                <Button
+                  title="Add"
+                  containerStyle={styles.addContainer}
+                  buttonStyle={styles.addStyle}
+                  titleStyle={styles.addTitleStyle}
+                  onPress={() => addFolder()}
+                />
+              </View>
+            </Dialog>
+            <View style={styles.mainContainer}>
+              <View style={styles.container}>
+                <FlatList
+                  data={[...folders, ...images]}
+                  renderItem={({item, index}) =>
+                    index < folders.length ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const nextFolder = path[path.length - 1][item];
+                          setPathString(pathString + item);
+                          changeFolder(nextFolder);
+                          setPath(oldPath => {
+                            const newPath = [...oldPath];
+                            newPath.push(nextFolder);
+                            return newPath;
+                          });
+                        }}>
+                        <View style={styles.iconContainer}>
+                          <Icon
+                            name="folder"
+                            type="entypo"
+                            color="#517fa4"
+                            size={100}
+                          />
+                          <Text>{item}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : (
+                      <Image
+                        source={{uri: item.uri}}
+                        style={styles.image}
+                        height={item.height}
+                        width={105}
+                        onLoad={({
+                          nativeEvent: {
+                            source: {width, height},
+                          },
+                        }) =>
+                          setImages(oldImages => {
+                            const newImages = [...oldImages];
+                            newImages[index - folders.length].height =
+                              (height / width) * 105;
+                            return newImages;
+                          })
+                        }
                       />
-                      <Text>{item}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ) : (
-                  <Image
-                    source={{uri: item.uri}}
-                    style={styles.image}
-                    height={item.height}
-                    width={105}
-                    onLoad={({
-                      nativeEvent: {
-                        source: {width, height},
-                      },
-                    }) =>
-                      setImages(oldImages => {
-                        const newImages = [...oldImages];
-                        newImages[index - folders.length].height =
-                          (height / width) * 105;
-                        return newImages;
-                      })
-                    }
-                  />
-                )
-              }
-              keyExtractor={item => (item.uri ? item.uri : item)}
-              numColumns={3}
-            />
+                    )
+                  }
+                  keyExtractor={item => (item.uri ? item.uri : item)}
+                  numColumns={3}
+                />
+              </View>
+            </View>
+            {blob && (
+              <Button
+                title={'send'}
+                containerStyle={styles.sendButtonContainer}
+                onPress={sendPhoto}
+              />
+            )}
           </View>
-        </View>
-        {blob && (
-          <Button
-            title={'send'}
-            containerStyle={styles.sendButtonContainer}
-            onPress={sendPhoto}
-          />
         )}
       </SafeAreaProvider>
     </SafeAreaView>
@@ -331,6 +351,11 @@ const styles = StyleSheet.create({
     right: 20,
     bottom: 20,
     zIndex: 1,
+  },
+  dialogueButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
   },
 });
 
