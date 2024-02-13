@@ -27,12 +27,6 @@ const LandingScreen = ({navigation}) => {
               <Text>Browse Folders</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Camera')}>
-            <View style={styles.iconContainer}>
-              <Icon name="camera" type="entypo" color="#517fa4" size={100} />
-              <Text>Camera</Text>
-            </View>
-          </TouchableOpacity>
         </View>
       </SafeAreaProvider>
     </SafeAreaView>

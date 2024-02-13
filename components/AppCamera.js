@@ -5,11 +5,12 @@ import {Camera, useCameraPermission} from 'react-native-vision-camera';
 import PhotoEditor from '@baronha/react-native-photo-editor';
 import {Button, Icon} from '@rneui/themed';
 import {gravity} from 'react-native-sensors';
+import {Storage} from 'aws-amplify';
 
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
-const AppCamera = ({navigation}) => {
+const AppCamera = ({pathString, displayCamera}) => {
   const {hasPermission, requestPermission} = useCameraPermission();
   const devices = Camera.getAvailableCameraDevices();
   const device = devices.find(d => d.position === 'back');
@@ -81,14 +82,14 @@ const AppCamera = ({navigation}) => {
     try {
       const response = await fetch(takenPhoto.path);
       const blob = await response.blob();
-      navigation.navigate('Folders', {
-        blob: blob,
-        name: takenPhoto.path.substring(takenPhoto.path.length - 14),
-        metadata: {
-          current_orientation: 'top',
-          expected_orientation: orientation,
+      await Storage.put(
+        pathString + takenPhoto.path.substring(takenPhoto.path.length - 14),
+        blob,
+        {
+          contentType: 'image/jpeg', // contentType is optional
         },
-      });
+      );
+      displayCamera(false);
     } catch (err) {
       console.log('Error uploading file:', err);
     }
@@ -142,7 +143,7 @@ const AppCamera = ({navigation}) => {
                   color="white"
                   size={30}
                   containerStyle={styles.closePhotoIconContainer}
-                  onPress={() => navigation.navigate('Home')}
+                  onPress={() => displayCamera(false)}
                 />
                 <Camera
                   style={styles.camera}

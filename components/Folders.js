@@ -18,6 +18,7 @@ import 'react-native-url-polyfill/auto';
 import keys from '../keys';
 import {Icon, Button, Dialog, Input} from '@rneui/themed';
 import CameraScanner from './CameraScanner';
+import AppCamera from './AppCamera';
 
 const createPresignedUrlWithClient = ({region, bucket, key}) => {
   const client = new S3Client({
@@ -31,7 +32,7 @@ const createPresignedUrlWithClient = ({region, bucket, key}) => {
   return getSignedUrl(client, command, {expiresIn: 3600});
 };
 
-const Folders = ({navigation, route}) => {
+const Folders = ({navigation}) => {
   const [path, setPath] = useState([]);
   const [pathString, setPathString] = useState('');
   const [folders, setFolders] = useState([]);
@@ -40,14 +41,14 @@ const Folders = ({navigation, route}) => {
   const [newFolderName, setNewFolderName] = useState('');
   const [addError, setAddError] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
-  const {blob, name, metadata} = route.params;
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const getCurFolderName = () => {
     const names = pathString.split('/');
     return names.length <= 1 ? 'root' : names[names.length - 2];
   };
 
-  const changeFolder = async nextFolder => {
+  const updateCurrentFoldersAndImages = async nextFolder => {
     const newFolders = [];
     const newImages = [];
     for (const key in nextFolder) {
@@ -125,7 +126,7 @@ const Folders = ({navigation, route}) => {
         }
       }
       setPath([main]);
-      changeFolder(main);
+      updateCurrentFoldersAndImages(main);
     } catch (err) {
       console.log(err);
     }
@@ -135,7 +136,7 @@ const Folders = ({navigation, route}) => {
     if (path.length <= 1) {
       navigation.navigate('Home');
     } else {
-      changeFolder(path[path.length - 2]);
+      updateCurrentFoldersAndImages(path[path.length - 2]);
       setPath(oldPath => {
         const newPath = [...oldPath];
         newPath.pop();
@@ -151,17 +152,17 @@ const Folders = ({navigation, route}) => {
     }
   };
 
-  const sendPhoto = async () => {
-    try {
-      await Storage.put(pathString + name, blob, {
-        contentType: 'image/jpeg', // contentType is optional
-        metadata: metadata,
-      });
-      navigation.navigate('Home');
-    } catch (err) {
-      console.log('Error uploading file:', err);
-    }
+  const folderClicked = folderName => {
+    const nextFolder = path[path.length - 1][folderName];
+    setPathString(pathString + folderName);
+    updateCurrentFoldersAndImages(nextFolder);
+    setPath(oldPath => {
+      const newPath = [...oldPath, nextFolder];
+      return newPath;
+    });
   };
+
+  const updateCurrentFolder = () => {};
 
   useEffect(() => {
     createFolderObject();
@@ -175,36 +176,48 @@ const Folders = ({navigation, route}) => {
             setCode={setNewFolderName}
             close={() => setScannerOpen(false)}
           />
+        ) : cameraOpen ? (
+          <AppCamera pathString={pathString} displayCamera={setCameraOpen} />
         ) : (
           <View style={styles.topContainer}>
-            <View style={styles.topButtonsContainer}>
+            <View style={styles.headerContainer}>
               <Button
-                containerStyle={styles.addContainer}
-                buttonStyle={styles.addStyle}
-                onPress={goBack}>
-                <Icon
-                  name="arrow-back"
-                  type="ionicon"
-                  size={25}
-                  color={'#517fa4'}
-                />
-              </Button>
-              <Text style={styles.folderName}>{getCurFolderName()}</Text>
-              <Button
-                title="Add"
                 icon={{
-                  name: 'addfolder',
+                  name: 'arrowleft',
                   type: 'ant-design',
-                  size: 15,
+                  size: 25,
                   color: '#517fa4',
                 }}
-                containerStyle={styles.addContainer}
-                buttonStyle={styles.addStyle}
-                titleStyle={styles.addTitleStyle}
-                onPress={() => {
-                  setDisplayAddFolder(true);
-                }}
+                buttonStyle={styles.plainButton}
+                onPress={goBack}
               />
+              <Text style={styles.folderName}>{getCurFolderName()}</Text>
+              <View style={styles.headerRightButtons}>
+                <Button
+                  icon={{
+                    name: 'camera',
+                    type: 'entypo',
+                    size: 25,
+                    color: '#517fa4',
+                  }}
+                  containerStyle={styles.headerButtonContainer}
+                  buttonStyle={styles.plainButton}
+                  iconContainerStyle={styles.headerButtonContainer}
+                  onPress={() => setCameraOpen(true)}
+                />
+                <Button
+                  icon={{
+                    name: 'addfolder',
+                    type: 'ant-design',
+                    size: 25,
+                    color: '#517fa4',
+                  }}
+                  containerStyle={styles.headerButtonContainer}
+                  buttonStyle={styles.plainButton}
+                  iconContainerStyle={styles.headerButtonContainer}
+                  onPress={() => setDisplayAddFolder(true)}
+                />
+              </View>
             </View>
             <Dialog
               isVisible={displayAddFolder}
@@ -223,16 +236,14 @@ const Folders = ({navigation, route}) => {
               <View style={styles.dialogueButtonsContainer}>
                 <Button
                   title="Scan"
-                  containerStyle={styles.addContainer}
-                  buttonStyle={styles.addStyle}
-                  titleStyle={styles.addTitleStyle}
+                  buttonStyle={styles.plainButton}
+                  titleStyle={styles.dialogueButtonTitleStyle}
                   onPress={() => setScannerOpen(true)}
                 />
                 <Button
                   title="Add"
-                  containerStyle={styles.addContainer}
-                  buttonStyle={styles.addStyle}
-                  titleStyle={styles.addTitleStyle}
+                  buttonStyle={styles.plainButton}
+                  titleStyle={styles.dialogueButtonTitleStyle}
                   onPress={() => addFolder()}
                 />
               </View>
@@ -243,17 +254,7 @@ const Folders = ({navigation, route}) => {
                   data={[...folders, ...images]}
                   renderItem={({item, index}) =>
                     index < folders.length ? (
-                      <TouchableOpacity
-                        onPress={() => {
-                          const nextFolder = path[path.length - 1][item];
-                          setPathString(pathString + item);
-                          changeFolder(nextFolder);
-                          setPath(oldPath => {
-                            const newPath = [...oldPath];
-                            newPath.push(nextFolder);
-                            return newPath;
-                          });
-                        }}>
+                      <TouchableOpacity onPress={() => folderClicked(item)}>
                         <View style={styles.iconContainer}>
                           <Icon
                             name="folder"
@@ -290,13 +291,6 @@ const Folders = ({navigation, route}) => {
                 />
               </View>
             </View>
-            {blob && (
-              <Button
-                title={'send'}
-                containerStyle={styles.sendButtonContainer}
-                onPress={sendPhoto}
-              />
-            )}
           </View>
         )}
       </SafeAreaProvider>
@@ -316,20 +310,23 @@ const styles = StyleSheet.create({
     flex: 1,
     width: 375,
   },
-  topButtonsContainer: {
+  headerContainer: {
     flexDirection: 'row',
-    width: '100%',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  addContainer: {
-    width: 100,
+  headerButtonContainer: {
+    width: 35,
+    paddingEnd: 5,
   },
-  addStyle: {
+  headerRightButtons: {
+    flexDirection: 'row',
+  },
+  plainButton: {
     backgroundColor: null,
   },
-  addTitleStyle: {
-    color: '#517fa4',
+  dialogueButtonTitleStyle: {
+    color: 'black',
   },
   error: {
     color: 'red',
