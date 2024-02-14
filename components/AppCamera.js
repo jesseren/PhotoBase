@@ -10,7 +10,7 @@ import {Storage} from 'aws-amplify';
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
-const AppCamera = ({pathString, displayCamera}) => {
+const AppCamera = ({pathString, displayCamera, updateFolder}) => {
   const {hasPermission, requestPermission} = useCameraPermission();
   const devices = Camera.getAvailableCameraDevices();
   const device = devices.find(d => d.position === 'back');
@@ -89,6 +89,7 @@ const AppCamera = ({pathString, displayCamera}) => {
           contentType: 'image/jpeg', // contentType is optional
         },
       );
+      await updateFolder();
       displayCamera(false);
     } catch (err) {
       console.log('Error uploading file:', err);

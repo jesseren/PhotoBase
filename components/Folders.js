@@ -19,6 +19,7 @@ import keys from '../keys';
 import {Icon, Button, Dialog, Input} from '@rneui/themed';
 import CameraScanner from './CameraScanner';
 import AppCamera from './AppCamera';
+import {useImmer} from 'use-immer';
 
 const createPresignedUrlWithClient = ({region, bucket, key}) => {
   const client = new S3Client({
@@ -33,7 +34,8 @@ const createPresignedUrlWithClient = ({region, bucket, key}) => {
 };
 
 const Folders = ({navigation}) => {
-  const [path, setPath] = useState([]);
+  const [folderObject, setFolderObject] = useImmer({});
+  const [curFolder, setCurFolder] = useImmer({});
   const [pathString, setPathString] = useState('');
   const [folders, setFolders] = useState([]);
   const [images, setImages] = useState([]);
@@ -45,7 +47,7 @@ const Folders = ({navigation}) => {
 
   const getCurFolderName = () => {
     const names = pathString.split('/');
-    return names.length <= 1 ? 'root' : names[names.length - 2];
+    return names.length <= 1 ? '' : names[names.length - 2];
   };
 
   const updateCurrentFoldersAndImages = async nextFolder => {
@@ -68,13 +70,18 @@ const Folders = ({navigation}) => {
   };
 
   const createNewFolder = async () => {
-    await Storage.put(pathString + newFolderName + '/');
+    const folderName = newFolderName + '/';
+    await Storage.put(pathString + folderName);
     let newFolder = {};
-    if (path.length === 1) {
-      await Storage.put(pathString + newFolderName + '/' + 'in/');
-      await Storage.put(pathString + newFolderName + '/' + 'out/');
-      await Storage.put(pathString + newFolderName + '/' + 'supplement/');
-      await Storage.put(pathString + newFolderName + '/' + 'default/');
+    if (pathString === '') {
+      try {
+        await Storage.put(pathString + folderName + 'in/');
+        await Storage.put(pathString + folderName + 'out/');
+        await Storage.put(pathString + folderName + 'supplement/');
+        await Storage.put(pathString + folderName + 'default/');
+      } catch (err) {
+        console.log(err);
+      }
       newFolder = {
         'in/': {},
         'out/': {},
@@ -84,13 +91,19 @@ const Folders = ({navigation}) => {
     }
     setFolders(oldFolders => {
       const newFolders = [...oldFolders];
-      newFolders.push(newFolderName + '/');
+      newFolders.push(folderName);
       return newFolders;
     });
-    setPath(oldPath => {
-      const newPath = [...oldPath];
-      newPath[newPath.length - 1][newFolderName + '/'] = newFolder;
-      return newPath;
+    setCurFolder(oldFolder => {
+      oldFolder[folderName] = newFolder;
+    });
+    setFolderObject(oldFolderObject => {
+      let newFolderObject = oldFolderObject;
+      const pathFolders = pathString.split('/');
+      for (let i = 0; i < pathFolders.length - 1; i++) {
+        newFolderObject = newFolderObject[pathFolders[i] + '/'];
+      }
+      newFolderObject[folderName] = newFolder;
     });
     setDisplayAddFolder(false);
   };
@@ -98,8 +111,8 @@ const Folders = ({navigation}) => {
   const addFolder = () => {
     if (newFolderName.search('/') !== -1) {
       setAddError('Folder name cannot contain "/"');
-    } else if (newFolderName + '/' in path[path.length - 1]) {
-      setAddError('Folder name already exists');
+    } else if (newFolderName + '/' in curFolder || newFolderName === '') {
+      setAddError('Folder name already exists or is invalid');
     } else {
       createNewFolder();
       setNewFolderName('');
@@ -108,7 +121,7 @@ const Folders = ({navigation}) => {
 
   const createFolderObject = async () => {
     try {
-      const response = await Storage.list('', {pageSize: 'ALL'});
+      const response = await Storage.list(pathString, {pageSize: 'ALL'});
       const main = {};
       for (const result of response.results) {
         const split = result.key.split('/');
@@ -125,47 +138,71 @@ const Folders = ({navigation}) => {
           cur[split[split.length - 1]] = result.key;
         }
       }
-      setPath([main]);
-      updateCurrentFoldersAndImages(main);
+      return main;
     } catch (err) {
       console.log(err);
     }
   };
 
+  const updateCurrentFolder = async () => {
+    let cur = await createFolderObject();
+    const pathFolders = pathString.split('/');
+    if (pathString === '') {
+      setFolderObject(cur);
+    } else {
+      for (let i = 0; i < pathFolders.length - 1; i++) {
+        cur = cur[pathFolders[i] + '/'];
+      }
+      setFolderObject(oldFolderObject => {
+        let newFolderObject = oldFolderObject;
+        let folderName = getCurFolderName() + '/';
+        for (let i = 0; i < pathFolders.length - 2; i++) {
+          newFolderObject = newFolderObject[pathFolders[i] + '/'];
+        }
+        newFolderObject[folderName] = cur;
+      });
+    }
+    setCurFolder(cur);
+    updateCurrentFoldersAndImages(cur);
+  };
+
   const goBack = () => {
-    if (path.length <= 1) {
+    if (pathString === '') {
       navigation.navigate('Home');
     } else {
-      updateCurrentFoldersAndImages(path[path.length - 2]);
-      setPath(oldPath => {
-        const newPath = [...oldPath];
-        newPath.pop();
-        return newPath;
-      });
-      let cur = 0;
+      let last = 0;
       for (let i = 0; i < pathString.length - 1; i++) {
         if (pathString.at(i) === '/') {
-          cur = i;
+          last = i;
         }
       }
-      setPathString(cur === 0 ? '' : pathString.substring(0, cur + 1));
+      const newPathString = last === 0 ? '' : pathString.substring(0, last + 1);
+      setPathString(newPathString);
+      let prevFolder = folderObject;
+      const pathFolders = newPathString.split('/');
+      for (let i = 0; i < pathFolders.length - 1; i++) {
+        prevFolder = prevFolder[pathFolders[i] + '/'];
+      }
+      setCurFolder(prevFolder);
+      updateCurrentFoldersAndImages(prevFolder);
     }
   };
 
   const folderClicked = folderName => {
-    const nextFolder = path[path.length - 1][folderName];
+    const nextFolder = curFolder[folderName];
     setPathString(pathString + folderName);
+    setCurFolder(nextFolder);
     updateCurrentFoldersAndImages(nextFolder);
-    setPath(oldPath => {
-      const newPath = [...oldPath, nextFolder];
-      return newPath;
-    });
   };
 
-  const updateCurrentFolder = () => {};
-
   useEffect(() => {
-    createFolderObject();
+    const initializePath = async () => {
+      const main = await createFolderObject();
+      setFolderObject(main);
+      setCurFolder(main);
+      updateCurrentFoldersAndImages(main);
+    };
+    initializePath();
   }, []);
 
   return (
@@ -177,7 +214,11 @@ const Folders = ({navigation}) => {
             close={() => setScannerOpen(false)}
           />
         ) : cameraOpen ? (
-          <AppCamera pathString={pathString} displayCamera={setCameraOpen} />
+          <AppCamera
+            pathString={pathString}
+            displayCamera={setCameraOpen}
+            updateFolder={updateCurrentFolder}
+          />
         ) : (
           <View style={styles.topContainer}>
             <View style={styles.headerContainer}>
