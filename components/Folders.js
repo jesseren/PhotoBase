@@ -50,6 +50,15 @@ const Folders = ({navigation}) => {
     return names.length <= 1 ? '' : names[names.length - 2];
   };
 
+  const navigateToPath = (pathObject, path) => {
+    let cur = pathObject;
+    const pathFolders = path.split('/');
+    for (let i = 0; i < pathFolders.length - 1; i++) {
+      cur = cur[pathFolders[i] + '/'];
+    }
+    return cur;
+  };
+
   const updateCurrentFoldersAndImages = async nextFolder => {
     const newFolders = [];
     const newImages = [];
@@ -98,11 +107,7 @@ const Folders = ({navigation}) => {
       oldFolder[folderName] = newFolder;
     });
     setFolderObject(oldFolderObject => {
-      let newFolderObject = oldFolderObject;
-      const pathFolders = pathString.split('/');
-      for (let i = 0; i < pathFolders.length - 1; i++) {
-        newFolderObject = newFolderObject[pathFolders[i] + '/'];
-      }
+      let newFolderObject = navigateToPath(oldFolderObject, pathString);
       newFolderObject[folderName] = newFolder;
     });
     setDisplayAddFolder(false);
@@ -150,9 +155,7 @@ const Folders = ({navigation}) => {
     if (pathString === '') {
       setFolderObject(cur);
     } else {
-      for (let i = 0; i < pathFolders.length - 1; i++) {
-        cur = cur[pathFolders[i] + '/'];
-      }
+      cur = navigateToPath(cur, pathString);
       setFolderObject(oldFolderObject => {
         let newFolderObject = oldFolderObject;
         let folderName = getCurFolderName() + '/';
@@ -178,11 +181,7 @@ const Folders = ({navigation}) => {
       }
       const newPathString = last === 0 ? '' : pathString.substring(0, last + 1);
       setPathString(newPathString);
-      let prevFolder = folderObject;
-      const pathFolders = newPathString.split('/');
-      for (let i = 0; i < pathFolders.length - 1; i++) {
-        prevFolder = prevFolder[pathFolders[i] + '/'];
-      }
+      let prevFolder = navigateToPath(folderObject, newPathString);
       setCurFolder(prevFolder);
       updateCurrentFoldersAndImages(prevFolder);
     }
