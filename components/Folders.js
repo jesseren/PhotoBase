@@ -79,7 +79,7 @@ const Folders = ({navigation}) => {
   };
 
   const createNewFolder = async () => {
-    const folderName = newFolderName + '/';
+    const folderName = newFolderName.trim() + '/';
     await Storage.put(pathString + folderName);
     let newFolder = {};
     if (pathString === '') {
@@ -114,9 +114,10 @@ const Folders = ({navigation}) => {
   };
 
   const addFolder = () => {
-    if (newFolderName.search('/') !== -1) {
+    const folderName = newFolderName.trim();
+    if (folderName.search('/') !== -1) {
       setAddError('Folder name cannot contain "/"');
-    } else if (newFolderName + '/' in curFolder || newFolderName === '') {
+    } else if (folderName + '/' in curFolder || folderName === '') {
       setAddError('Folder name already exists or is invalid');
     } else {
       createNewFolder();
