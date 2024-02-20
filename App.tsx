@@ -6,7 +6,6 @@ import {Amplify} from 'aws-amplify';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import LandingScreen from './components/LandingScreen';
-import AppCamera from './components/AppCamera';
 import Folders from './components/Folders';
 import keys from './keys';
 
@@ -33,11 +32,6 @@ const App = () => {
         <Stack.Screen
           name="Home"
           component={LandingScreen}
-          options={defaultOptions}
-        />
-        <Stack.Screen
-          name="Camera"
-          component={AppCamera}
           options={defaultOptions}
         />
         <Stack.Screen
