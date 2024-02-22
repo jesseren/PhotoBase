@@ -20,6 +20,7 @@ import {Icon, Button, Dialog, Input} from '@rneui/themed';
 import CameraScanner from './CameraScanner';
 import AppCamera from './AppCamera';
 import {useImmer} from 'use-immer';
+import {createFolderObject} from '../functions/createFolderObject';
 
 const createPresignedUrlWithClient = ({region, bucket, key}) => {
   const client = new S3Client({
@@ -33,7 +34,7 @@ const createPresignedUrlWithClient = ({region, bucket, key}) => {
   return getSignedUrl(client, command, {expiresIn: 3600});
 };
 
-const Folders = ({navigation}) => {
+const Folders = ({route, navigation}) => {
   const [folderObject, setFolderObject] = useImmer({});
   const [curFolder, setCurFolder] = useImmer({});
   const [pathString, setPathString] = useState('');
@@ -45,6 +46,8 @@ const Folders = ({navigation}) => {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
 
+  const {initialFolderName} = route.params;
+
   const getCurFolderName = () => {
     const names = pathString.split('/');
     return names.length <= 1 ? '' : names[names.length - 2];
@@ -54,6 +57,9 @@ const Folders = ({navigation}) => {
     let cur = pathObject;
     const pathFolders = path.split('/');
     for (let i = 0; i < pathFolders.length - 1; i++) {
+      if (!(pathFolders[i] + '/' in cur)) {
+        break;
+      }
       cur = cur[pathFolders[i] + '/'];
     }
     return cur;
@@ -80,24 +86,26 @@ const Folders = ({navigation}) => {
 
   const createNewFolder = async () => {
     const folderName = newFolderName.trim() + '/';
-    await Storage.put(pathString + folderName);
     let newFolder = {};
-    if (pathString === '') {
-      try {
+
+    try {
+      await Storage.put(pathString + folderName);
+      if (pathString === '') {
         await Storage.put(pathString + folderName + 'in/');
         await Storage.put(pathString + folderName + 'out/');
         await Storage.put(pathString + folderName + 'supplement/');
         await Storage.put(pathString + folderName + 'default/');
-      } catch (err) {
-        console.log(err);
       }
-      newFolder = {
-        'in/': {},
-        'out/': {},
-        'supplement/': {},
-        'default/': {},
-      };
+    } catch (err) {
+      console.log(err);
     }
+    newFolder = {
+      'in/': {},
+      'out/': {},
+      'supplement/': {},
+      'default/': {},
+    };
+
     setFolders(oldFolders => {
       const newFolders = [...oldFolders];
       newFolders.push(folderName);
@@ -125,33 +133,8 @@ const Folders = ({navigation}) => {
     }
   };
 
-  const createFolderObject = async () => {
-    try {
-      const response = await Storage.list(pathString, {pageSize: 'ALL'});
-      const main = {};
-      for (const result of response.results) {
-        const split = result.key.split('/');
-        let cur = main;
-        for (let i = 0; i < split.length - 1; i++) {
-          split[i] = split[i] + '/';
-          const newKey = split[i];
-          if (!(newKey in cur)) {
-            cur[newKey] = {};
-          }
-          cur = cur[newKey];
-        }
-        if (split[split.length - 1] !== '') {
-          cur[split[split.length - 1]] = result.key;
-        }
-      }
-      return main;
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
   const updateCurrentFolder = async () => {
-    let cur = await createFolderObject();
+    let cur = await createFolderObject(pathString);
     const pathFolders = pathString.split('/');
     if (pathString === '') {
       setFolderObject(cur);
@@ -197,10 +180,12 @@ const Folders = ({navigation}) => {
 
   useEffect(() => {
     const initializePath = async () => {
-      const main = await createFolderObject();
+      const main = await createFolderObject('');
       setFolderObject(main);
-      setCurFolder(main);
-      updateCurrentFoldersAndImages(main);
+      let initialFolder = navigateToPath(main, initialFolderName);
+      setCurFolder(initialFolder);
+      setPathString(initialFolderName);
+      updateCurrentFoldersAndImages(initialFolder);
     };
     initializePath();
   }, []);

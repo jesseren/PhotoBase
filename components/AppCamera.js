@@ -83,7 +83,7 @@ const AppCamera = ({pathString, displayCamera, updateFolder}) => {
       const response = await fetch(takenPhoto.path);
       const blob = await response.blob();
       await Storage.put(
-        pathString + takenPhoto.path.substring(takenPhoto.path.length - 14),
+        pathString + takenPhoto.path.substring(takenPhoto.path.length - 16),
         blob,
         {
           contentType: 'image/jpeg', // contentType is optional
